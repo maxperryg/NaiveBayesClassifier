@@ -13,9 +13,21 @@ def count_frequencies(text):
 
 
 def remove_unseen_words(words, vocab):
-    for i in range(len(words)):
-        if words[i] not in vocab:
-            words.pop(i)
+    return [word for word in words if word in vocab]
+
+
+def add_to_feature_vectors(feature_vectors, _class, processed_text):
+    processed_text = remove_unseen_words(processed_text, vocabulary)
+    features = count_frequencies(processed_text)
+    feature_vectors.append({_class: features})
+
+
+def neat_dictionary(dic):
+    pretty = ""
+    for feature_vector in feature_vectors:
+        for key, val in feature_vector.items():
+            pretty += '"' + str(key) + '" : ' + str(val) + '\n'
+    return pretty
 
 
 vocabulary = set([line.rstrip() for line in open('Reviews/imdb.vocab')])
@@ -26,52 +38,27 @@ reviews_folder = sys.argv[1]
 
 classes = os.listdir(reviews_folder)
 
-class_0_folder = os.path.join(reviews_folder, classes[0])
-class_1_folder = os.path.join(reviews_folder, classes[1])
+feature_vectors = []
 
-bag_of_words = {classes[0]:{}, classes[1]:{}}
+for _class in classes:
+    current_class = os.path.join(reviews_folder, _class)
+    if os.path.isdir(current_class):
+        for file in os.listdir(current_class):
+            if file.endswith(".txt"):
+                review_file = open(os.path.join(current_class, file), "r")
+                review_text = review_file.read()
+                processed_text = ""
+                for c in review_text:
+                    if c in '!?':
+                        processed_text += " " + c.lower()
+                    elif c not in punctuation:
+                        processed_text += c.lower()
+                processed_text = processed_text.split()
+                add_to_feature_vectors(feature_vectors, _class, processed_text)
+print(feature_vectors)
 
-all_class_0 = ""
-for file in os.listdir(class_0_folder):
-    if file.endswith(".txt"):
-        review_file = open(os.path.join(class_0_folder, file), "r")
-        review_text = review_file.read()
-        processed_text = ""
-        for c in review_text:
-            if c in '!?':
-                processed_text += " " + c.lower()
-                continue
-            if c not in punctuation:
-                processed_text += c.lower()
-    all_class_0 += processed_text + " "
-all_class_0 = all_class_0.split()
-remove_unseen_words(all_class_0, vocabulary)
-all_class_0 = count_frequencies(all_class_0)
-bag_of_words[classes[0]] = all_class_0
-
-print("\n preprocessed reviews in", classes[0], ":\n")
-print("\t", all_class_0)
-
-all_class_1 = ""
-for file in os.listdir(class_1_folder):
-    if file.endswith(".txt"):
-        review_file = open(os.path.join(class_1_folder, file), "r")
-        review_text = review_file.read()
-        processed_text = ""
-        for c in review_text:
-            if c in '!?':
-                processed_text += " " + c.lower()
-                continue
-            if c not in punctuation:
-                processed_text += c.lower()
-    all_class_1 += processed_text + " "
-all_class_1 = all_class_1.split()
-remove_unseen_words(all_class_1, vocabulary)
-all_class_1 = count_frequencies(all_class_1)
-bag_of_words[classes[1]] = all_class_1
-
-print("\n preprocessed reviews in", classes[1], ":\n")
-print("\t", all_class_1)
-
-print("\n\n", bag_of_words)
+output_file_name = sys.argv[1]
+output_file_name = output_file_name.replace("/", "")
+output_file =  open("movie-review-" + output_file_name + ".NB", 'w')
+output_file.writelines(neat_dictionary(feature_vectors))
 
