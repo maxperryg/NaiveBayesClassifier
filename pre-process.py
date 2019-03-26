@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 
 def count_frequencies(text):
@@ -55,10 +56,14 @@ for _class in classes:
                         processed_text += c.lower()
                 processed_text = processed_text.split()
                 add_to_feature_vectors(feature_vectors, _class, processed_text)
+
+
 print(feature_vectors)
 
 output_file_name = sys.argv[1]
-output_file_name = output_file_name.replace("/", "")
-output_file =  open("movie-review-" + output_file_name + ".NB", 'w')
-output_file.writelines(neat_dictionary(feature_vectors))
+output_file_name = output_file_name[:output_file_name.index("/")]
+
+output_file = open("movie-review-" + output_file_name + ".NB", 'w')
+for vector in feature_vectors:
+    output_file.writelines(json.dumps(vector) + "\n")
 
