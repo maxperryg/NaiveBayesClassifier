@@ -23,14 +23,6 @@ def add_to_feature_vectors(feature_vectors, _class, processed_text):
     feature_vectors.append({_class: features})
 
 
-def neat_dictionary(dic):
-    pretty = ""
-    for feature_vector in feature_vectors:
-        for key, val in feature_vector.items():
-            pretty += '"' + str(key) + '" : ' + str(val) + '\n'
-    return pretty
-
-
 vocabulary = set([line.rstrip() for line in open('Reviews/imdb.vocab')])
 
 punctuation = {'"', '*', '+', ',', '.', '/', '<', '>', '@', '^', '_', '`', '{', '|', '~'}
