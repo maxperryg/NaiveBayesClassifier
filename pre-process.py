@@ -53,7 +53,8 @@ for _class in classes:
 print(feature_vectors)
 
 output_file_name = sys.argv[1]
-output_file_name = output_file_name[:output_file_name.index("/")]
+#output_file_name = output_file_name[:output_file_name.index("/")]
+output_file_name = output_file_name.replace("/", "")
 
 output_file = open("movie-review-" + output_file_name + ".NB", 'w')
 for vector in feature_vectors:

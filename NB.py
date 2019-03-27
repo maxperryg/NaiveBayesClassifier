@@ -3,23 +3,46 @@ import sys
 import json
 import math
 
-def create_documents(documents, classes):
+
+def turn_to_list(count):
+    doc = []
+    for element in count:
+        for key, value in element.items():
+            for i in range(value):
+                doc.append(key)
+    return doc
+
+def create_documents(train_documents, test_documents, classes):
     training_file = sys.argv[1]
     processed_feature_vectors = open(training_file, 'r')
     for line in processed_feature_vectors.readlines():
         vector = json.loads(line)
-        documents.append(vector)
+        train_documents.append(vector)
         key = list(vector.keys())[0]
         if key in classes:
             classes[key].append(vector[key])
         else:
             classes[key] = [vector[key]]
 
+    processed_feature_vectors.close()
 
-def train_naive_bayes(number_of_documents, classes):
+    test_file = sys.argv[2]
+    processed_feature_vectors = open(test_file, 'r')
+    for line in processed_feature_vectors.readlines():
+        vector = json.loads(line)
+        key = list(vector.keys())[0]
+        if key in test_documents:
+            test_documents[key].append(vector[key])
+        else:
+            test_documents[key] = turn_to_list([vector[key]])
+    processed_feature_vectors.close()
+
+
+def train_naive_bayes(number_of_documents, classes, vocabulary):
     prior_probabilities = {}
     num_of_words_in_each_class = {}
     bow = {}
+    each_word_probability = {}
     for label, document in classes.items():
         num_of_documents_in_class = len(document)
         prior_probabilities[label] = math.log2(num_of_documents_in_class/number_of_documents)
@@ -32,22 +55,78 @@ def train_naive_bayes(number_of_documents, classes):
                    bow[label][word] += value
                 else:
                     bow[label][word] = value
-        print(prior_probabilities)
-        print(bow)
+        for word in vocabulary:
+            count = 0
+            if word in bow[label]:
+                count = bow[label][word]
+            each_word_probability[(word, label)] = math.log2((count+1) / (num_of_words_in_each_class[label] + len(vocabulary)))
+    return prior_probabilities, each_word_probability, bow
 
 
-test_file = sys.argv[2]
+def test_naive_bayes(test_documents, classes, vocabulary, prior_probabilities, each_word_probabilities):
+    sum_prior_probabilities = {}
+    for label, documents_in_each_class in classes.items():
+        sum_prior_probabilities[label] = prior_probabilities[label]
+        for word in test_documents:
+            if word in vocabulary:
+                sum_prior_probabilities[label] += each_word_probabilities[(word, label)]
+    return arg_max(sum_prior_probabilities)
+
+
+def arg_max(sum_prior_probabilities):
+    v = list(sum_prior_probabilities.values())
+    k = list(sum_prior_probabilities.keys())
+    return k[v.index(max(v))]
+
+
+def pretty_print(each_word_probabilities):
+    pretty = ""
+    for key, val in each_word_probabilities.items():
+        w = str(key[0])
+        c = str(key[1])
+        pretty += 'Probability of "' + w + '" being classified as ' + c + ' is ' + str(val) + '\n'
+    return pretty
+
+
+
 parameters_file = sys.argv[3]
 predictions_file = sys.argv[4]
+
 vocabulary = set([line.rstrip() for line in open('Reviews/imdb.vocab')])
 
-documents = []
+train_documents = []
+test_documents = {}
 classes = {}
 
-create_documents(documents, classes)
-number_of_documents = len(documents)
-train_naive_bayes(number_of_documents, classes)
+create_documents(train_documents, test_documents, classes)
+number_of_documents = len(train_documents)
+prior_probabilities, each_word_probabilities, bow = train_naive_bayes(number_of_documents, classes, vocabulary)
 
+results = {True: 0, False: 0}
+predictions = "\t Document \t\t Predicted Label \t Actual Label\n _______________________________________________________\n"
+num = 1
+for label, documents in test_documents.items():
+    for document in documents:
+        test_result = test_naive_bayes(document, classes, vocabulary, prior_probabilities, each_word_probabilities)
+        results[test_result == label] +=1
+        predictions += "\t Review " + str(num) + "\t\t | \t\t" + test_result + "\t\t | \t\t" + label + "\n"
+        num += 1
+
+parameters_file = open(parameters_file, 'w')
+parameters_file.write(pretty_print(each_word_probabilities))
+parameters_file.close()
+predictions_file = open(predictions_file, 'w')
+accuracy = (results[True]/(results[False] + results[True])) *100
+predictions += "\n\n Total" + str(results) + ". Accuracy: " + str(accuracy) + "%"
+predictions_file.write(predictions)
+predictions_file.close()
+print(train_documents, "\n\n\n")
+print(test_documents, "\n\n\n")
+
+
+print(prior_probabilities, "\n\n\n")
+print(each_word_probabilities, "\n\n\n")
+print(bow, "\n\n\n")
 
 
 
