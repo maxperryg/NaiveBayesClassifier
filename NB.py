@@ -6,10 +6,9 @@ import math
 
 def turn_to_list(count):
     doc = []
-    for element in count:
-        for key, value in element.items():
-            for i in range(value):
-                doc.append(key)
+    for key, value in count.items():
+        for i in range(value):
+            doc.append(key)
     return doc
 
 def create_documents(train_documents, test_documents, classes):
@@ -32,9 +31,9 @@ def create_documents(train_documents, test_documents, classes):
         vector = json.loads(line)
         key = list(vector.keys())[0]
         if key in test_documents:
-            test_documents[key].append(vector[key])
+            test_documents[key].append(turn_to_list(vector[key]))
         else:
-            test_documents[key] = turn_to_list([vector[key]])
+            test_documents[key] = [turn_to_list(vector[key])]
     processed_feature_vectors.close()
 
 
@@ -99,34 +98,36 @@ test_documents = {}
 classes = {}
 
 create_documents(train_documents, test_documents, classes)
+print("Finished Creating Documents\n")
 number_of_documents = len(train_documents)
 prior_probabilities, each_word_probabilities, bow = train_naive_bayes(number_of_documents, classes, vocabulary)
+print("Finished Computing Prio Probabilities\n")
 
 results = {True: 0, False: 0}
-predictions = "\t Document \t\t Predicted Label \t Actual Label\n _______________________________________________________\n"
+predictions = "Predictions for Test Reviews: \n\n"
 num = 1
 for label, documents in test_documents.items():
     for document in documents:
         test_result = test_naive_bayes(document, classes, vocabulary, prior_probabilities, each_word_probabilities)
         results[test_result == label] +=1
-        predictions += "\t Review " + str(num) + "\t\t | \t\t" + test_result + "\t\t | \t\t" + label + "\n"
+        predictions += "\t" + str(num) + "\t\t | \t\t Predicted Class: " + test_result + "\t\t | \t\t Actual Class: " + label + "\n"
         num += 1
+        print("Finished First Document of " + label + "\n")
+    print("finished " + label + "\n")
 
 parameters_file = open(parameters_file, 'w')
 parameters_file.write(pretty_print(each_word_probabilities))
 parameters_file.close()
 predictions_file = open(predictions_file, 'w')
 accuracy = (results[True]/(results[False] + results[True])) *100
-predictions += "\n\n Total" + str(results) + ". Accuracy: " + str(accuracy) + "%"
+predictions += "\n\n Total Reviews: " + str(results[False] + results[True])
+predictions += "\n Amount Predicted Correctly: " + str(results[True])
+predictions += "\n Amount Predicted Incorrectly: " + str(results[False])
+predictions += "\n Accuracy: " + str(accuracy) + "%"
 predictions_file.write(predictions)
+predictions_file.write("\n\n Prior Probabilities: \n\t Negative: " + str(prior_probabilities["neg"]) + "\n\t Positive: " +str(prior_probabilities["pos"]))
 predictions_file.close()
-print(train_documents, "\n\n\n")
-print(test_documents, "\n\n\n")
-
-
-print(prior_probabilities, "\n\n\n")
-print(each_word_probabilities, "\n\n\n")
-print(bow, "\n\n\n")
+print("Done")
 
 
 
