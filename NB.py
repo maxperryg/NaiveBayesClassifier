@@ -49,6 +49,8 @@ def train_naive_bayes(number_of_documents, classes, vocabulary):
         num_of_words_in_each_class[label] = 0
         for doc in document:
             for word, value in doc.items():
+                if word in {"the", "in", "a", "it", "are", "an", "and", "as", "at", "be", "by", "for", "from", "has", "he", "is", "it", "of", "on", "that", "to", "were", "was", "will", "with"}:
+                    continue
                 num_of_words_in_each_class[label] += value
                 if word in bow[label]:
                    bow[label][word] += value
@@ -67,6 +69,9 @@ def test_naive_bayes(test_documents, classes, vocabulary, prior_probabilities, e
     for label, documents_in_each_class in classes.items():
         sum_prior_probabilities[label] = prior_probabilities[label]
         for word in test_documents:
+            if word in {"the", "in", "a", "it", "are", "an", "and", "as", "at", "be", "by", "for", "from", "has", "he",
+                        "is", "it", "of", "on", "that", "to", "were", "was", "will", "with"}:
+                continue
             if word in vocabulary:
                 sum_prior_probabilities[label] += each_word_probabilities[(word, label)]
     return arg_max(sum_prior_probabilities)
@@ -101,7 +106,7 @@ create_documents(train_documents, test_documents, classes)
 print("Finished Creating Documents\n")
 number_of_documents = len(train_documents)
 prior_probabilities, each_word_probabilities, bow = train_naive_bayes(number_of_documents, classes, vocabulary)
-print("Finished Computing Prio Probabilities\n")
+print("Finished Computing Prior Probabilities\n")
 
 results = {True: 0, False: 0}
 predictions = "Predictions for Test Reviews: \n\n"
